@@ -1,0 +1,7 @@
+a {
+  /*color:#2067b0;*/
+  /*text-decoration:none;*/
+  /*-webkit-transition:border-bottom-color .2s linear;*/
+  transition:border-bottom-color .2s linear;
+}
+

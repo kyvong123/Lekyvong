@@ -1,0 +1,16 @@
+.logo {
+  /*padding-left:35px;*/
+  /*display:-webkit-box;*/
+  display:-ms-flexbox;
+  display:flex;
+  font-size:24px;
+  font-family:OpenSans-Semibold,sans-serif;
+  line-height:62px;
+  margin-right:10px;
+  min-width:185px;
+  overflow:hidden;
+  vertical-align:middle;
+  white-space:nowrap;
+  height:62px;
+}
+

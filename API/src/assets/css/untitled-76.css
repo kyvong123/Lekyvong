@@ -1,0 +1,6 @@
+.sitemap-menu-lines:after {
+  bottom:-5px;
+  /*-webkit-transition-property:bottom,-webkit-transform;*/
+  transition-property:bottom,transform;
+}
+

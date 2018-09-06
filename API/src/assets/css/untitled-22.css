@@ -1,0 +1,11 @@
+.header-search-inner {
+  height:34px;
+  max-width:650px;
+  border-radius:17px;
+  margin:0 25px 0 0;
+  padding:0 14px;
+  -webkit-transition:background-color .3s linear;
+  transition:background-color .3s linear;
+  overflow:hidden;
+}
+

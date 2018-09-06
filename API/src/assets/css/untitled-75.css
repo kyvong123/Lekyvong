@@ -1,0 +1,10 @@
+.sitemap-menu-lines, .sitemap-menu-lines:after, .sitemap-menu-lines:before {
+  background:#fff;
+}
+
+.sitemap-menu-lines:before {
+  top:-5px;
+  /*-webkit-transition-property:top,-webkit-transform;*/
+  transition-property:top,transform;
+}
+

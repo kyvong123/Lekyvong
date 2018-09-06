@@ -1,0 +1,16 @@
+.logo-text {
+  display:inline-block;
+  margin-right:7px;
+  max-width:240px;
+  overflow:hidden;
+  position:relative;
+  vertical-align:top;
+  color:#fff;
+  /*display:inline-block;*/
+  /*margin-right:7px;*/
+  /*max-width:240px;*/
+  /*overflow:hidden;*/
+  /*position:relative;*/
+  /*vertical-align:top;*/
+}
+

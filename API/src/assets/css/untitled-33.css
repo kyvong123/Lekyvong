@@ -1,0 +1,31 @@
+.header-search-icon {
+  cursor:pointer;
+  display:block;
+  height:32px;
+  position:absolute;
+  right:0;
+  top:1px;
+  width:35px;
+  -webkit-font-smoothing:antialiased;
+}
+
+.header-search-icon:before {
+  background-size:15px 15px;
+  background-image:url(../../assets/img/Capture.png);
+}
+
+.header-search-icon:before {
+  transition:all 250ms ease;
+}
+
+.header-search-icon:before {
+  content:'';
+  height:16px;
+  width:16px;
+  top:9px;
+  right:0;
+  position:absolute;
+  background-image:url(../../assets/img/Capture.png);
+  background-repeat:no-repeat;
+}
+

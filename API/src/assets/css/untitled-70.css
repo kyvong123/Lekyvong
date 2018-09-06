@@ -1,0 +1,15 @@
+.user-name {
+  display:inline-block;
+  font-size:14px;
+  height:16px;
+  font-weight:bold;
+  margin-top:-2px;
+  max-width:calc(100% - 90px);
+  overflow:hidden;
+  padding-right:16px;
+  position:relative;
+  text-overflow:ellipsis;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+

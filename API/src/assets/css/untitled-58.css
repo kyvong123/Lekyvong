@@ -1,0 +1,9 @@
+.timeman-tasks:before {
+  content:'';
+  display:inline-block;
+  vertical-align:middle;
+  width:6px;
+  height:9px;
+  margin:0 5px;
+}
+

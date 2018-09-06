@@ -1,0 +1,29 @@
+.logo img {
+  vertical-align:middle;
+  position:absolute;
+  top:50%;
+  left:0;
+  /*-moz-transform:translateY(-50%);*/
+  /*-webkit-transform:translateY(-50%);*/
+  /*-o-transform:translateY(-50%);*/
+  /*-ms-transform:translateY(-50%);*/
+  /*transform:translateY(-50%);*/
+  max-width:100%;
+  max-height:100%;
+  height:auto;
+  width:auto;
+  /*vertical-align:middle;*/
+  /*position:absolute;*/
+  /*top:50%;*/
+  /*left:0;*/
+  /*-moz-transform:translateY(-50%);*/
+  /*-webkit-transform:translateY(-50%);*/
+  /*-o-transform:translateY(-50%);*/
+  /*-ms-transform:translateY(-50%);*/
+  /*transform:translateY(-50%);*/
+  /*max-width:100%;*/
+  /*max-height:100%;*/
+  /*height:auto;*/
+  /*width:auto;*/
+}
+

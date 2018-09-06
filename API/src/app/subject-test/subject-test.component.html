@@ -1,0 +1,1408 @@
+
+  <div class="row cotrencung">
+    <div class="col"><div id = "header" style>
+<div id = "header-inner">
+    
+            <div class="timeman-container planner-container am-pm-mode"><div class="timeman-wrap planner-wrap"><span id="timeman-block" class="timeman-block"><span class="bx-time" id="timeman-timer"><span class="time-hours" id ="time-hours">7</span><span class="time-semicolon">:</span><span class="time-minutes" id = "time-minutes">29</span><span class="time-am-pm"  id ="time-am-pm">PM</span></span><span class="timeman-right-side"><span class="timeman-info" id="timeman-info"><span class="timeman-tasks" id="timeman-tasks" style="display: block;">0</span></span><span class="timeman-task-time" id="timeman-task-time" style="display: none;"><i></i><span id="timeman-task-timer"></span></span></span><span class="timeman-background"></span></span></div>
+            </div>
+            <div id="bxdynamic_planner_start" style="display:none"></div>
+            <script type="text/javascript">
+                (function(){
+                var formatTime = function(ts, bSec)
+                {
+                    return BX.util.str_pad(parseInt(ts/3600), 2, '0', 'left')+':'+BX.util.str_pad(parseInt(ts%3600/60), 2, '0', 'left')+(!!bSec ? (':'+BX.util.str_pad(ts%60, 2, '0', 'left')) : '');
+                };
+
+                window.plannerUnFormatTime = function(time)
+                {
+                    var q = time.split(/[\s:]+/);
+                    if (q.length == 3)
+                    {
+                        var mt = q[2];
+                        if (mt == 'pm' && q[0] < 12)
+                        q[0] = parseInt(q[0], 10) + 12;
+
+                        if (mt == 'am' && q[0] == 12)
+                        q[0] = 0;
+
+                    }
+                return parseInt(q[0], 10) * 3600 + parseInt(q[1], 10) * 60;
+                };
+
+                var BXPLANNER = new BX.CPlanner({'CALENDAR_ENABLED':true,'EVENTS':[],'EVENT_TIME':'','TASKS_ENABLED':true,'TASKS':[],'TASKS_COUNT':'0','TASKS_TIMER':false,'TASK_ON_TIMER':false,'MANDATORY_UFS':'N'}),
+                NODE_TASKS = null,
+                NODE_EVENTS = null,
+                NODE_TASK_TIME = null,
+                NODE_TASK_TIMER = null,
+
+                bTaskTimerSwitch = false,
+                timer = null;
+
+                BXPLANNER.WND = null;
+
+                BX.addCustomEvent(
+                BXPLANNER, 'onPlannerDataRecieved', function(ob, DATA)
+                {
+                    if(!!DATA.CALENDAR_ENABLED)
+                    {
+                        var d = DATA.EVENT_TIME;
+                        if(d != '')
+                        {
+                            var t = plannerUnFormatTime(DATA.EVENT_TIME),
+                            dt = new Date();
+                                if(t < dt.getHours()*3600 + dt.getMinutes() * 60)
+                                {
+                                    d = '';
+                                }
+                        }
+
+                        if(d != '')
+                        {
+                            if(!NODE_EVENTS)
+                            {
+                                NODE_EVENTS = BX.create('SPAN', {props: {
+                                    className: 'timeman-event',
+                                    id: 'timeman-event'
+                                }});
+                            }
+
+                            NODE_EVENTS.innerHTML = d;
+                            NODE_EVENTS.style.display = 'inline-block';
+                        }
+                        else if (!!NODE_EVENTS)
+                        {
+                            NODE_EVENTS.style.display = 'none';
+                        }
+                    }
+
+                        if(!!DATA.TASKS_ENABLED)
+                        {
+                            if(!NODE_TASKS)
+                            {
+                                NODE_TASKS = BX.create('SPAN', {
+                                    style: {
+                                        display: !!NODE_TASK_TIME && NODE_TASK_TIME.style.display != 'none' ? 'inline-block' : 'block'
+                                    },
+                                    props: {
+                                        className: 'timeman-tasks',
+                                        id: 'timeman-tasks'
+                                    }
+                                })
+                            }
+
+                            NODE_TASKS.innerHTML = parseInt(DATA.TASKS_COUNT)||'0';
+                        }
+
+
+                        BX.adjust(BX('timeman-info', true), {children: [NODE_EVENTS, NODE_TASKS]});
+
+                        if (!timer)
+                        {
+                            timer = BX.timer({container: BX('timeman-timer'), display : "bitrix24_time"});
+                        }
+                    }
+                );
+
+                BX.addCustomEvent('onTaskTimerChange', function(params)
+                {
+                    if (params.action === 'refresh_daemon_event')
+                    {
+                        if(!!bTaskTimerSwitch)
+                        {
+                            if(!NODE_TASK_TIME)
+                            {
+                                NODE_TASK_TIME = BX('timeman-task-time')
+                            }
+
+                            NODE_TASK_TIME.style.display = '';
+
+                            if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                            {
+                                NODE_TASKS.style.display = 'inline-block';
+                            }
+
+                            bTaskTimerSwitch = false;
+                        }
+
+                        var s = '';
+                        s += formatTime(parseInt(params.data.TIMER.RUN_TIME||0) + parseInt(params.data.TASK.TIME_SPENT_IN_LOGS||0), true);
+
+                        if(!!params.data.TASK.TIME_ESTIMATE && (params.data.TASK.TIME_ESTIMATE > 0))
+                        {
+                            s += ' / ' + formatTime(parseInt(params.data.TASK.TIME_ESTIMATE||0));
+                        }
+
+                        if(!NODE_TASK_TIMER)
+                        {
+                            NODE_TASK_TIMER = BX('timeman-task-timer')
+                        }
+
+                        NODE_TASK_TIMER.innerHTML = s;
+                    }
+                    else if(params.action === 'start_timer')
+                    {
+                        bTaskTimerSwitch = true;
+                    }
+                    else if(params.action === 'stop_timer')
+                    {
+                        if(!NODE_TASK_TIME)
+                        {
+                            NODE_TASK_TIME = BX('timeman-task-time');
+                        }
+
+                        NODE_TASK_TIME.style.display = 'none';
+                        if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                        {
+                            NODE_TASKS.style.display = 'block';
+                        }
+                    }
+                    else if (params.action === 'init_timer_data')
+                    {
+                        if(!NODE_TASK_TIME)
+                            NODE_TASK_TIME = BX('timeman-task-time');
+
+                        if (
+                            params.data.TIMER
+                            && params.data.TASK
+                            && (params.data.TIMER.TASK_ID == params.data.TASK.ID)
+                            && (params.data.TIMER.TIMER_STARTED_AT > 0)
+                            && (params.data.TASK.STATUS != 5)
+                            && (params.data.TASK.STATUS != 4)
+                        )
+                        {
+                            NODE_TASK_TIME.style.display = '';
+
+                            if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                            {
+                                NODE_TASKS.style.display = 'inline-block';
+                            }
+
+                            var s = '';
+                            s += formatTime(parseInt(params.data.TIMER.RUN_TIME||0) + parseInt(params.data.TASK.TIME_SPENT_IN_LOGS||0), true);
+
+                            if(!!params.data.TASK.TIME_ESTIMATE && (params.data.TASK.TIME_ESTIMATE > 0))
+                            {
+                                s += ' / ' + formatTime(parseInt(params.data.TASK.TIME_ESTIMATE||0));
+                            }
+
+                            if(!NODE_TASK_TIMER)
+                            {
+                                NODE_TASK_TIMER = BX('timeman-task-timer');
+                            }
+
+                            NODE_TASK_TIMER.innerHTML = s;
+                        }
+                        else
+                        {
+                            NODE_TASK_TIME.style.display = 'none';
+                        }
+                    }
+                });
+
+                BX.ready(function(){
+                    BX.bind(BX('timeman-block', true), 'click', function()
+                    {
+                        if(!BXPLANNER.WND)
+                        {
+                            BXPLANNER.WND = new BX.PopupWindow('planner_main', this, {
+                                lightShadow: true,
+                                autoHide: true,
+                                offsetTop : 10,
+                                offsetLeft : -60,
+                                zIndex : -1,
+                                bindOptions: {
+                                    forceBindPosition: true,
+                                    forceTop: true
+                                },
+                                angle: {
+                                    position: "top",
+                                    offset: 130
+                                },
+                                events: {
+                                    onPopupClose: function() {
+                                        BX.removeClass(BX('timeman-block', true), "timeman-block-active");
+                                    }
+                                }
+                            });
+                        }
+
+                        if(!BXPLANNER.WND.isShown())
+                        {
+                            BXPLANNER.update();
+                            BXPLANNER.WND.setContent(BX.create('DIV', {
+                                props: {
+                                    className: 'tm-popup-content'
+                                },
+                                children: [
+                                    BXPLANNER.drawAdditional(),
+                                    BX.create('DIV', {
+                                        props: {className: 'tm-tabs-content tm-tab-content'},
+                                        style: {display: 'block'}, // core_timeman.css is hiding that block by default
+                                        children: [BXPLANNER.draw()]
+                                    })
+                                ]
+                            }));
+                        }
+
+                        BX.addClass(this, "timeman-block-active");
+                        BXPLANNER.WND.show();
+                    });
+                });
+
+                BX.timer.registerFormat("bitrix24_time", B24.Timemanager.formatCurrentTime);
+                BXPLANNER.draw();
+
+                window.BXPLANNER = BXPLANNER;
+            })();
+            </script>
+    
+    
+    
+    
+    
+    <div class = "header-logo-block"> 
+        <div class="sitemap-menu" id="sitemap-menu">
+            <span class="sitemap-menu-lines">
+                
+            </span>
+        </div>    
+            <a id="logo_24_a"  title="Home" class="logo" >                               <span id="logo_24_text">
+                                <span class="logo-text" >ISC</span>
+                                <span class="logo-color" >Quang Trung</span>          
+                        </span>
+                        <span class="logo-img-span">
+                                <img id="logo_24_img" style="display:none;">
+                        </span>
+                        <div class="header-logo-block-settings header-logo-block-settings-show">
+                                <span id="b24_rename_button" class="header-logo-block-settings-item" onclick="BX.
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              Bitrix24.renamePortal(BX('b24_rename_button')); return false;" title="Set address"></span>
+                        </div>
+            </a>
+            
+    
+    </div>
+    
+    <div class="header-search timeman-simple header-search-empty">
+        <div class="header-search-inner">
+            <form class="header-search-form" method="get" name="search-form" onsubmit="return false;" action="" id="search">
+                <input class="header-search-input" name="q" id="search-textbox-input" type="text" autocomplete="off" placeholder="find people, documents, and more" onclick="BX.addClass(this.parentNode.parentNode.parentNode,'header-search-active')" onblur="BX.removeClass(this.parentNode.parentNode.parentNode, 'header-search-active')">
+                <span class="header-search-icon header-search-icon-title"></span>
+                <span class="search-title-top-delete"></span>
+            </form>
+        </div>
+    </div>
+    
+    <div id="bxdynamic_XdqEv1_start" style="display:none"></div>
+    
+    <script type="text/javascript">
+        BX.message({
+            "GLOBAL_SEARCH" : "Search",
+            "SEARCH_MORE" : "More",
+            "SEARCH_NO_RESULT" : "No entries have been found.",
+            "SEARCH_CRM_LEAD" : "Leads",
+            "SEARCH_CRM_DEAL" : "Deals",
+            "SEARCH_CRM_INVOICE" : "Invoices",
+            "SEARCH_CRM_CONTACT" : "Contacts",
+            "SEARCH_CRM_COMPANY" : "Companies",
+            "SEARCH_CRM_QUOTE" : "Quotes"
+        });
+
+        new BX.B24SearchTitle ({
+            'AJAX_PAGE' : '/stream/',
+            'CONTAINER_ID': 'search',
+            'INPUT_ID': 'search-textbox-input',
+            'MIN_QUERY_LEN': 3,
+            'FORMAT': 'json',
+            'CATEGORIES_ALL': [{'TITLE':'Employees','CODE':'custom_users','CLIENTDB_PREFIX':'U'},{'TITLE':'Groups','CODE':'custom_sonetgroups','CLIENTDB_PREFIX':'G'},{'TITLE':'Menu items','CODE':'custom_menuitems','CLIENTDB_PREFIX':'M'}],
+            'USER_URL':  '/company/personal/user/#user_id#/',
+            'GROUP_URL':  '/workgroups/group/#group_id#/',
+            'WAITER_TEXT':  'Searching...',
+            'CURRENT_TS':  1533124173,
+            'GLOBAL_SEARCH_CATEGORIES': {'stream':{'url':'/stream/?ncc=1&apply_filter=Y&FIND=','text':'Activity Stream'},'tasks':{'url':'/company/personal/user/1/tasks/?apply_filter=Y&with_preset=Y&FIND=','text':'Tasks'},'calendar':{'url':'/company/personal/user/1/calendar/?apply_filter=Y&with_preset=Y&FIND=','text':'Calendar'},'disk':{'url':'/company/personal/user/1/disk/path/?apply_filter=Y&with_preset=Y&FIND=','text':'24.Drive'},'lead':{'url':'/crm/lead/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Leads'},'deal':{'url':'/crm/deal/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Deals'},'invoice':{'url':'/crm/invoice/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Invoices'},'contact':{'url':'/crm/contact/list/?apply_filter=Y&with_preset=Y&FIND=','text':'Contacts'},'company':{'url':'/crm/company/list/?apply_filter=Y&with_preset=Y&FIND=','text':'Companies'},'quote':{'url':'/crm/quote/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Quotes'},'activity':{'url':'/crm/activity/list/?apply_filter=Y&with_preset=Y&FIND=','text':'My activities'},'sites':{'url':'/sites/?apply_filter=Y&with_preset=Y&FIND=','text':'Sites'}},
+            'MORE_USERS_URL': '/company/?set_filter_company_search=Y&company_search_FIO='
+            //'SEARCH_PAGE': '/search/index.php'
+        });
+    </script>
+    <div id="bxdynamic_XdqEv1_end" style="display:none"></div>
+    
+    <div class="user-block" id="user-block" onclick="showUserMenu()">
+        <span class="user-img user-default-avatar" style="background: url(assets/img/profile.jpg) no-repeat center; background-size: cover;">
+        </span>
+        <span class="user-name" id="user-name" data-toggle="dropdown">
+            
+        </span>
+        <div class="dropdown-menu" role="menu">
+            <a class="dropdown-item" role="presentation" href="Profile.html" style="text-decoration: none;color:black;">View Profile</a>
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">Change Avatar</a>
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">Change Theme</a>
+            <a class="dropdown-item" role="presentation" href="Login.html" style="text-decoration: none;color:black;">Log out</a>
+        </div>
+    </div>
+    
+    <a href="javascript:void(0)" onclick="BX.Intranet.SystemAuthForm.licenseHandler({'LICENSE_PATH':'/settings/license_all.php','COUNTER_URL':'https://c.bitrix24.com/cnt/tf.php','HOST':'b24-w2apzp.bitrix24.com'})" class="upgrade-btn  upgrade-btn-en">
+        <span class="upgrade-btn-icon"></span>
+        <span class="upgrade-btn-text">Notification</span>
+    </a>
+    
+    <div class="help-block" id="bx-help-block" title="Help">
+        <div class="help-icon-border"></div>
+        <div class="help-block-icon"></div>
+        <div class="help-block-counter-wrap" id="bx-help-notify">
+        </div>
+    </div>
+    
+</div>
+</div>
+</div>
+</div>
+<div class="row cotthuhai">
+    <div class="col"><div id = "header" style>
+<div id = "header-inner">
+    
+            <div class="timeman-container planner-container am-pm-mode" style="display:none;"><div class="timeman-wrap planner-wrap"><span id="timeman-block" class="timeman-block"><span class="bx-time" id="timeman-timer"><span class="time-hours" id = "time-hours">7</span><span class="time-semicolon">:</span><span class="time-minutes" id = "time-minutes">29</span><span class="time-am-pm" id ="time-am-pm">PM</span></span><span class="timeman-right-side"><span class="timeman-info" id="timeman-info"><span class="timeman-tasks" id="timeman-tasks" style="display: block;">0</span></span><span class="timeman-task-time" id="timeman-task-time" style="display: none;"><i></i><span id="timeman-task-timer"></span></span></span><span class="timeman-background"></span></span></div>
+            </div>
+            <div id="bxdynamic_planner_start" style="display:none"></div>
+    
+    
+            <script type="text/javascript">
+                (function(){
+                var formatTime = function(ts, bSec)
+                {
+                    return BX.util.str_pad(parseInt(ts/3600), 2, '0', 'left')+':'+BX.util.str_pad(parseInt(ts%3600/60), 2, '0', 'left')+(!!bSec ? (':'+BX.util.str_pad(ts%60, 2, '0', 'left')) : '');
+                };
+
+                window.plannerUnFormatTime = function(time)
+                {
+                    var q = time.split(/[\s:]+/);
+                    if (q.length == 3)
+                    {
+                        var mt = q[2];
+                        if (mt == 'pm' && q[0] < 12)
+                        q[0] = parseInt(q[0], 10) + 12;
+
+                        if (mt == 'am' && q[0] == 12)
+                        q[0] = 0;
+
+                    }
+                return parseInt(q[0], 10) * 3600 + parseInt(q[1], 10) * 60;
+                };
+
+                var BXPLANNER = new BX.CPlanner({'CALENDAR_ENABLED':true,'EVENTS':[],'EVENT_TIME':'','TASKS_ENABLED':true,'TASKS':[],'TASKS_COUNT':'0','TASKS_TIMER':false,'TASK_ON_TIMER':false,'MANDATORY_UFS':'N'}),
+                NODE_TASKS = null,
+                NODE_EVENTS = null,
+                NODE_TASK_TIME = null,
+                NODE_TASK_TIMER = null,
+
+                bTaskTimerSwitch = false,
+                timer = null;
+
+                BXPLANNER.WND = null;
+
+                BX.addCustomEvent(
+                BXPLANNER, 'onPlannerDataRecieved', function(ob, DATA)
+                {
+                    if(!!DATA.CALENDAR_ENABLED)
+                    {
+                        var d = DATA.EVENT_TIME;
+                        if(d != '')
+                        {
+                            var t = plannerUnFormatTime(DATA.EVENT_TIME),
+                            dt = new Date();
+                                if(t < dt.getHours()*3600 + dt.getMinutes() * 60)
+                                {
+                                    d = '';
+                                }
+                        }
+
+                        if(d != '')
+                        {
+                            if(!NODE_EVENTS)
+                            {
+                                NODE_EVENTS = BX.create('SPAN', {props: {
+                                    className: 'timeman-event',
+                                    id: 'timeman-event'
+                                }});
+                            }
+
+                            NODE_EVENTS.innerHTML = d;
+                            NODE_EVENTS.style.display = 'inline-block';
+                        }
+                        else if (!!NODE_EVENTS)
+                        {
+                            NODE_EVENTS.style.display = 'none';
+                        }
+                    }
+
+                        if(!!DATA.TASKS_ENABLED)
+                        {
+                            if(!NODE_TASKS)
+                            {
+                                NODE_TASKS = BX.create('SPAN', {
+                                    style: {
+                                        display: !!NODE_TASK_TIME && NODE_TASK_TIME.style.display != 'none' ? 'inline-block' : 'block'
+                                    },
+                                    props: {
+                                        className: 'timeman-tasks',
+                                        id: 'timeman-tasks'
+                                    }
+                                })
+                            }
+
+                            NODE_TASKS.innerHTML = parseInt(DATA.TASKS_COUNT)||'0';
+                        }
+
+
+                        BX.adjust(BX('timeman-info', true), {children: [NODE_EVENTS, NODE_TASKS]});
+
+                        if (!timer)
+                        {
+                            timer = BX.timer({container: BX('timeman-timer'), display : "bitrix24_time"});
+                        }
+                    }
+                );
+
+                BX.addCustomEvent('onTaskTimerChange', function(params)
+                {
+                    if (params.action === 'refresh_daemon_event')
+                    {
+                        if(!!bTaskTimerSwitch)
+                        {
+                            if(!NODE_TASK_TIME)
+                            {
+                                NODE_TASK_TIME = BX('timeman-task-time')
+                            }
+
+                            NODE_TASK_TIME.style.display = '';
+
+                            if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                            {
+                                NODE_TASKS.style.display = 'inline-block';
+                            }
+
+                            bTaskTimerSwitch = false;
+                        }
+
+                        var s = '';
+                        s += formatTime(parseInt(params.data.TIMER.RUN_TIME||0) + parseInt(params.data.TASK.TIME_SPENT_IN_LOGS||0), true);
+
+                        if(!!params.data.TASK.TIME_ESTIMATE && (params.data.TASK.TIME_ESTIMATE > 0))
+                        {
+                            s += ' / ' + formatTime(parseInt(params.data.TASK.TIME_ESTIMATE||0));
+                        }
+
+                        if(!NODE_TASK_TIMER)
+                        {
+                            NODE_TASK_TIMER = BX('timeman-task-timer')
+                        }
+
+                        NODE_TASK_TIMER.innerHTML = s;
+                    }
+                    else if(params.action === 'start_timer')
+                    {
+                        bTaskTimerSwitch = true;
+                    }
+                    else if(params.action === 'stop_timer')
+                    {
+                        if(!NODE_TASK_TIME)
+                        {
+                            NODE_TASK_TIME = BX('timeman-task-time');
+                        }
+
+                        NODE_TASK_TIME.style.display = 'none';
+                        if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                        {
+                            NODE_TASKS.style.display = 'block';
+                        }
+                    }
+                    else if (params.action === 'init_timer_data')
+                    {
+                        if(!NODE_TASK_TIME)
+                            NODE_TASK_TIME = BX('timeman-task-time');
+
+                        if (
+                            params.data.TIMER
+                            && params.data.TASK
+                            && (params.data.TIMER.TASK_ID == params.data.TASK.ID)
+                            && (params.data.TIMER.TIMER_STARTED_AT > 0)
+                            && (params.data.TASK.STATUS != 5)
+                            && (params.data.TASK.STATUS != 4)
+                        )
+                        {
+                            NODE_TASK_TIME.style.display = '';
+
+                            if(!!NODE_TASKS && NODE_TASKS.style.display != 'none')
+                            {
+                                NODE_TASKS.style.display = 'inline-block';
+                            }
+
+                            var s = '';
+                            s += formatTime(parseInt(params.data.TIMER.RUN_TIME||0) + parseInt(params.data.TASK.TIME_SPENT_IN_LOGS||0), true);
+
+                            if(!!params.data.TASK.TIME_ESTIMATE && (params.data.TASK.TIME_ESTIMATE > 0))
+                            {
+                                s += ' / ' + formatTime(parseInt(params.data.TASK.TIME_ESTIMATE||0));
+                            }
+
+                            if(!NODE_TASK_TIMER)
+                            {
+                                NODE_TASK_TIMER = BX('timeman-task-timer');
+                            }
+
+                            NODE_TASK_TIMER.innerHTML = s;
+                        }
+                        else
+                        {
+                            NODE_TASK_TIME.style.display = 'none';
+                        }
+                    }
+                });
+
+                BX.ready(function(){
+                    BX.bind(BX('timeman-block', true), 'click', function()
+                    {
+                        if(!BXPLANNER.WND)
+                        {
+                            BXPLANNER.WND = new BX.PopupWindow('planner_main', this, {
+                                lightShadow: true,
+                                autoHide: true,
+                                offsetTop : 10,
+                                offsetLeft : -60,
+                                zIndex : -1,
+                                bindOptions: {
+                                    forceBindPosition: true,
+                                    forceTop: true
+                                },
+                                angle: {
+                                    position: "top",
+                                    offset: 130
+                                },
+                                events: {
+                                    onPopupClose: function() {
+                                        BX.removeClass(BX('timeman-block', true), "timeman-block-active");
+                                    }
+                                }
+                            });
+                        }
+
+                        if(!BXPLANNER.WND.isShown())
+                        {
+                            BXPLANNER.update();
+                            BXPLANNER.WND.setContent(BX.create('DIV', {
+                                props: {
+                                    className: 'tm-popup-content'
+                                },
+                                children: [
+                                    BXPLANNER.drawAdditional(),
+                                    BX.create('DIV', {
+                                        props: {className: 'tm-tabs-content tm-tab-content'},
+                                        style: {display: 'block'}, // core_timeman.css is hiding that block by default
+                                        children: [BXPLANNER.draw()]
+                                    })
+                                ]
+                            }));
+                        }
+
+                        BX.addClass(this, "timeman-block-active");
+                        BXPLANNER.WND.show();
+                    });
+                });
+
+                BX.timer.registerFormat("bitrix24_time", B24.Timemanager.formatCurrentTime);
+                BXPLANNER.draw();
+
+                window.BXPLANNER = BXPLANNER;
+            })();
+            </script>
+    
+    
+    
+    
+    
+    <div class = "header-logo-block"> 
+        <div class="sitemap-menu" id="sitemap-menu" onclick="Movadong()">&#9776;
+            <span class="sitemap-menu-lines">
+                
+            </span>
+        </div>    
+            <a id="logo_24_a"  title="Home" class="logo" >                               <span id="logo_24_text">
+                                <span class="logo-text" >ISC</span>
+                                <span class="logo-color" >Quang Trung</span>          
+                        </span>
+                        <span class="logo-img-span">
+                                <img id="logo_24_img" style="display:none;">
+                        </span>
+                        <div class="header-logo-block-settings header-logo-block-settings-show">
+                                <span id="b24_rename_button" class="header-logo-block-settings-item" onclick="BX.
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              
+                                                                                                              Bitrix24.renamePortal(BX('b24_rename_button')); return false;" title="Set address"></span>
+                        </div>
+            </a>
+            
+    
+    </div>
+    
+    <div class="header-search timeman-simple header-search-empty">
+        <div class="header-search-inner">
+            <form class="header-search-form" method="get" name="search-form" onsubmit="return false;" action="" id="search">
+                <input class="header-search-input" name="q" id="search-textbox-input" type="text" autocomplete="off" placeholder="find people, documents, and more" onclick="BX.addClass(this.parentNode.parentNode.parentNode,'header-search-active')" onblur="BX.removeClass(this.parentNode.parentNode.parentNode, 'header-search-active')">
+                <span class="header-search-icon header-search-icon-title"></span>
+                <span class="search-title-top-delete"></span>
+            </form>
+        </div>
+    </div>
+    
+    <div id="bxdynamic_XdqEv1_start" style="display:none"></div>
+    
+    <script type="text/javascript">
+        BX.message({
+            "GLOBAL_SEARCH" : "Search",
+            "SEARCH_MORE" : "More",
+            "SEARCH_NO_RESULT" : "No entries have been found.",
+            "SEARCH_CRM_LEAD" : "Leads",
+            "SEARCH_CRM_DEAL" : "Deals",
+            "SEARCH_CRM_INVOICE" : "Invoices",
+            "SEARCH_CRM_CONTACT" : "Contacts",
+            "SEARCH_CRM_COMPANY" : "Companies",
+            "SEARCH_CRM_QUOTE" : "Quotes"
+        });
+
+        new BX.B24SearchTitle ({
+            'AJAX_PAGE' : '/stream/',
+            'CONTAINER_ID': 'search',
+            'INPUT_ID': 'search-textbox-input',
+            'MIN_QUERY_LEN': 3,
+            'FORMAT': 'json',
+            'CATEGORIES_ALL': [{'TITLE':'Employees','CODE':'custom_users','CLIENTDB_PREFIX':'U'},{'TITLE':'Groups','CODE':'custom_sonetgroups','CLIENTDB_PREFIX':'G'},{'TITLE':'Menu items','CODE':'custom_menuitems','CLIENTDB_PREFIX':'M'}],
+            'USER_URL':  '/company/personal/user/#user_id#/',
+            'GROUP_URL':  '/workgroups/group/#group_id#/',
+            'WAITER_TEXT':  'Searching...',
+            'CURRENT_TS':  1533124173,
+            'GLOBAL_SEARCH_CATEGORIES': {'stream':{'url':'/stream/?ncc=1&apply_filter=Y&FIND=','text':'Activity Stream'},'tasks':{'url':'/company/personal/user/1/tasks/?apply_filter=Y&with_preset=Y&FIND=','text':'Tasks'},'calendar':{'url':'/company/personal/user/1/calendar/?apply_filter=Y&with_preset=Y&FIND=','text':'Calendar'},'disk':{'url':'/company/personal/user/1/disk/path/?apply_filter=Y&with_preset=Y&FIND=','text':'24.Drive'},'lead':{'url':'/crm/lead/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Leads'},'deal':{'url':'/crm/deal/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Deals'},'invoice':{'url':'/crm/invoice/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Invoices'},'contact':{'url':'/crm/contact/list/?apply_filter=Y&with_preset=Y&FIND=','text':'Contacts'},'company':{'url':'/crm/company/list/?apply_filter=Y&with_preset=Y&FIND=','text':'Companies'},'quote':{'url':'/crm/quote/kanban/?apply_filter=Y&with_preset=Y&FIND=','text':'Quotes'},'activity':{'url':'/crm/activity/list/?apply_filter=Y&with_preset=Y&FIND=','text':'My activities'},'sites':{'url':'/sites/?apply_filter=Y&with_preset=Y&FIND=','text':'Sites'}},
+            'MORE_USERS_URL': '/company/?set_filter_company_search=Y&company_search_FIO='
+            //'SEARCH_PAGE': '/search/index.php'
+        });
+    </script>
+    <div id="bxdynamic_XdqEv1_end" style="display:none"></div>
+    
+    <div class="user-block" id="user-block" onclick="showUserMenu()">
+        <span class="user-img user-default-avatar" style="background: url(assets/img/profile.jpg) no-repeat center; background-size: cover;">
+        </span>
+        <span class="user-name" id="user-name" data-toggle="dropdown">
+            
+        </span>
+        <div class="dropdown-menu" role="menu">
+            <a class="dropdown-item" role="presentation" href="Profile.html" style="text-decoration: none;color:black;">View Profile</a>
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">Change Avatar</a>
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">Change Theme</a>
+            <a class="dropdown-item" role="presentation" href="Login.html" style="text-decoration: none;color:black;">Log out</a>
+        </div>
+    </div>
+    
+    <a href="javascript:void(0)" onclick="BX.Intranet.SystemAuthForm.licenseHandler({'LICENSE_PATH':'/settings/license_all.php','COUNTER_URL':'https://c.bitrix24.com/cnt/tf.php','HOST':'b24-w2apzp.bitrix24.com'})" class="upgrade-btn  upgrade-btn-en">
+        <span class="upgrade-btn-icon"></span>
+        <span class="upgrade-btn-text">Notification</span>
+    </a>
+    
+    <div class="help-block" id="bx-help-block" title="Help">
+        <div class="help-icon-border"></div>
+        <div class="help-block-icon"></div>
+        <div class="help-block-counter-wrap" id="bx-help-notify">
+        </div>
+    </div>
+    
+</div>
+</div>
+</div>
+</div>
+<div class="row">
+    <div class="col-lg-2 col-xl-2" id="cotThanhsidebar" style="/*background-size:100%;*//*position:fixed;*//*background-image:url(&quot;assets/img/download.jpg&quot;);*//*margin:0px;*//*padding-left:35px;*/"><td class="bx-layout-inner-left" id="layout-left-column">
+                    <div class="menu-items-block" id="bx-left-menu">
+<div class="menu-resize-container" id="left-menu-resizer">
+    <div class="menu-resize-item" id="left-menu-resizer-button" style="opacity: 0;">
+        <span class="menu-resize-btn"></span>
+    </div>
+</div>
+<ul class="menu-items" id="left-menu-list">
+    <li class="menu-items-empty-li" id="left-menu-empty-item" style="height: 3px;"></li>
+                    <li id="bx_left_menu_menu_live_feed" data-status="show" data-id="menu_live_feed" data-counter-id="**" data-link="/stream/" data-all-links="" data-type="default" data-delete-perm="N" data-new-page="N" class="menu-item-block menu-item-live-feed">
+                    <span class="menu-fav-editable-btn menu-favorites-btn menu-fav-editable-btn-js" onclick="BX.Bitrix24.LeftMenuClass.openMenuPopup(this, 'menu_live_feed')">
+                            <span class="menu-favorites-btn-icon"></span>
+                    </span>
+
+                    <span class="menu-favorites-btn menu-favorites-draggable" onmousedown="BX.addClass(this.parentNode, 'menu-item-draggable');" onmouseup="BX.removeClass(this.parentNode, 'menu-item-draggable');">
+                        <span class="menu-fav-draggable-icon"></span>
+                    </span>
+
+                                            <a class="menu-item-link"  title="Employee Infomation" onclick="if (BX.Bitrix24.LeftMenuClass.isEditMode()) return false;
+                        ">
+                        <span class="menu-item-link-text" data-role="item-text" style="cursor:pointer;" onclick="SubjectTesttoCandidate()">
+                            Candidate                                                         </span><span class="menu-item-index-wrap"><span class="menu-item-index" id="menu-counter-live-feed"></span>
+                            </span>
+                                                                                </a>
+                                        </li>
+
+
+
+
+
+        <li class="menu-items-empty-li" id="left-menu-empty-item" style="height: 3px;"></li>
+                    <li id="bx_left_menu_menu_live_feed" data-status="show" data-id="menu_live_feed" data-counter-id="**" data-link="/stream/" data-all-links="" data-type="default" data-delete-perm="N" data-new-page="N" class="menu-item-block menu-item-live-feed">
+                    <span class="menu-fav-editable-btn menu-favorites-btn menu-fav-editable-btn-js" onclick="BX.Bitrix24.LeftMenuClass.openMenuPopup(this, 'menu_live_feed')">
+                            <span class="menu-favorites-btn-icon"></span>
+                    </span>
+
+                    <span class="menu-favorites-btn menu-favorites-draggable" onmousedown="BX.addClass(this.parentNode, 'menu-item-draggable');" onmouseup="BX.removeClass(this.parentNode, 'menu-item-draggable');">
+                        <span class="menu-fav-draggable-icon"></span>
+                    </span>
+
+
+
+
+
+
+
+                    <a class="menu-item-link"  title="Create New Employee " o>
+                        <span class="menu-item-link-text" data-role="item-text" style="cursor:pointer;">
+                            Examination                                                         </span><span class="menu-item-index-wrap"><span class="menu-item-index" id="menu-counter-live-feed"></span>
+                            </span>
+                                                                                </a>
+                                        </li>
+
+
+
+
+
+                                        <li class="menu-items-empty-li" id="left-menu-empty-item" style="height: 3px;"></li>
+                    <li id="bx_left_menu_menu_live_feed" data-status="show" data-id="menu_live_feed" data-counter-id="**" data-link="/stream/" data-all-links="" data-type="default" data-delete-perm="N" data-new-page="N" class="menu-item-block menu-item-live-feed">
+                    <span class="menu-fav-editable-btn menu-favorites-btn menu-fav-editable-btn-js" onclick="BX.Bitrix24.LeftMenuClass.openMenuPopup(this, 'menu_live_feed')">
+                            <span class="menu-favorites-btn-icon"></span>
+                    </span>
+
+                    <span class="menu-favorites-btn menu-favorites-draggable" onmousedown="BX.addClass(this.parentNode, 'menu-item-draggable');" onmouseup="BX.removeClass(this.parentNode, 'menu-item-draggable');">
+                        <span class="menu-fav-draggable-icon"></span>
+                    </span>
+
+
+
+
+
+
+
+                    <a class="menu-item-link" style="cursor:pointer;" title="Edit My Profile " >
+                        <span class="menu-item-link-text" data-role="item-text" >
+                            Subject Test                                                       </span><span class="menu-item-index-wrap"><span class="menu-item-index" id="menu-counter-live-feed"></span>
+                            </span>
+                                                                                </a>
+                                        </li>
+
+
+
+
+
+        <li class="menu-items-empty-li" id="left-menu-empty-item" style="height: 3px;"></li>
+                    <li id="bx_left_menu_menu_live_feed" data-status="show" data-id="menu_live_feed" data-counter-id="**" data-link="/stream/" data-all-links="" data-type="default" data-delete-perm="N" data-new-page="N" class="menu-item-block menu-item-live-feed">
+                    <span class="menu-fav-editable-btn menu-favorites-btn menu-fav-editable-btn-js" onclick="BX.Bitrix24.LeftMenuClass.openMenuPopup(this, 'menu_live_feed')">
+                            <span class="menu-favorites-btn-icon"></span>
+                    </span>
+
+                    <span class="menu-favorites-btn menu-favorites-draggable" onmousedown="BX.addClass(this.parentNode, 'menu-item-draggable');" onmouseup="BX.removeClass(this.parentNode, 'menu-item-draggable');">
+                        <span class="menu-fav-draggable-icon"></span>
+                    </span>
+                                            <a href="Profile.html" class="menu-item-link" title="View  My Profile  " onclick="if (BX.Bitrix24.LeftMenuClass.isEditMode()) return false;
+                        ">
+                        <span class="menu-item-link-text" data-role="item-text" >
+                            School                                               </span><span class="menu-item-index-wrap"><span class="menu-item-index" id="menu-counter-live-feed"></span>
+                            </span>
+                                                                                </a>
+                                        </li>
+                                    <li id="bx_left_menu_menu_tasks" data-status="
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  " data-id="menu_tasks" data-counter-id="tasks_total" data-link="/company/personal/user/1/tasks/" data-all-links="/company/personal/user/1/tasks/" data-type="default" data-delete-perm="N" data-top-menu-id="tasks_panel_menu" data-new-page="N" class="menu-item-block">
+                    <span class="menu-fav-editable-btn menu-favorites-btn menu-fav-editable-btn-js" onclick="BX.Bitrix24.LeftMenuClass.openMenuPopup(this, 'menu_tasks')">
+                            <span class="menu-favorites-btn-icon"></span>
+                    </span>
+
+                    <span class="menu-favorites-btn menu-favorites-draggable" onmousedown="BX.addClass(this.parentNode, 'menu-item-draggable');" onmouseup="BX.removeClass(this.parentNode, 'menu-item-draggable');">
+                        <span class="menu-fav-draggable-icon"></span>
+                    </span>
+
+                                                <span class="menu-item-plus">
+                            <a  class="menu-item-plus-icon"></a>
+                        </span>
+                                            <a class="menu-item-link"  title="Manage Country" onclick="if (BX.Bitrix24.LeftMenuClass.isEditMode()) return false;
+                        ">
+                        <span class="menu-item-link-text" data-role="item-text">
+                            School year                                                  </span><span class="menu-item-index-wrap"><span class="menu-item-index" id="menu-counter-tasks_total"></span>
+                            </span>
+                                                                                </a>
+                                        </li>
+                                   
+                                    
+                               
+                                    
+                                    
+                                    
+                                    
+    
+    
+    
+    <span class="bx-lang-btn en" id="bx-lang-btn" onclick="B24.openLanguagePopup(this)" data-langs="{&quot;en&quot;: &quot;English&quot;, &quot;de&quot;: &quot;Deutsch&quot;, &quot;la&quot;: &quot;Español&quot;, &quot;br&quot;: &quot;Português (BR)&quot;, &quot;fr&quot;: &quot;Français, beta&quot;, &quot;pl&quot;: &quot;Polski, beta&quot;, &quot;ru&quot;: &quot;Русский&quot;, &quot;ua&quot;: &quot;Українська&quot;, &quot;tr&quot;: &quot;Türkçe, beta&quot;, &quot;tc&quot;: &quot;中文（繁體）&quot;, &quot;sc&quot;: &quot;中文（简体）&quot;, &quot;ja&quot;: &quot;日本語, beta&quot;}"  data-toggle = "dropdown">
+                                    <span class="bx-lang-btn-icon"></span>
+
+                                </span>
+                                            <div class="dropdown-menu" role="menu" >
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">Vietnamese</a>
+            <a class="dropdown-item" role="presentation" href="#" style="text-decoration: none;color:black;">English</a>
+           
+        </div>
+
+
+
+
+    
+
+
+
+
+
+
+<div id="bxdynamic_im_start" style="display:none"></div>
+<script>
+BX.ready(function() {
+    bxImBarInit();
+});
+
+        BX.ready(function() {
+            BXIM = new BX.IM(BX('bx-notifier-panel'), {
+                'init': true,
+
+                'context': 'POPUP-FULLSCREEN',
+                'design': 'DESKTOP',
+                'colors': {'RED':'Red','GREEN':'Green','MINT':'Mint','LIGHT_BLUE':'Sky blue','DARK_BLUE':'Blue','PURPLE':'Purple','AQUA':'Aqua','PINK':'Pink','LIME':'Lime','BROWN':'Brown','AZURE':'Azure','KHAKI':'Khaki','SAND':'Sand','MARENGO':'Marengo','GRAY':'Grey','GRAPHITE':'Graphite'},
+                'colorsHex': {'RED':'#df532d','GREEN':'#aac337','MINT':'#4ba984','LIGHT_BLUE':'#6fc8e5','DARK_BLUE':'#3e99ce','PURPLE':'#8474c8','AQUA':'#1eb4aa','PINK':'#e98fa6','LIME':'#85cb7b','BROWN':'#ab7761','AZURE':'#29619b','KHAKI':'#728f7a','SAND':'#ba9c7b','MARENGO':'#556574','GRAY':'#77828e','GRAPHITE':'#3a403e'},
+                'mailCount': 0,
+                'notifyCount': 0,
+                'messageCount': 0,
+                'counters': {'**':'0','crm_company_all':'0','crm_contact_all':'0','crm_deal_all':'0','crm_lead_all':'0','crm_order_all':'0','tasks_accomplices':'0','tasks_auditor':'0','tasks_my':'0','tasks_originator':'0','tasks_total':'0'},
+                'ppStatus': true,
+                'ppServerStatus': true,
+                'updateStateInterval': '1380',
+                'openChatEnable': true,
+                'xmppStatus': false,
+                'isAdmin': true,
+                'bitrixNetwork': true,
+                'bitrixNetwork2': false,
+                'bitrix24': true,
+                'bitrix24net': false,
+                'bitrixIntranet': true,
+                'bitrixXmpp': false,
+                'bitrixMobile': true,
+                'bitrixOpenLines': true,
+                'desktop': false,
+                'desktopStatus': false,
+                'desktopVersion': 0,
+                'desktopLinkOpen': false,
+                'language': 'en',
+                'tooltipShowed': [],
+
+                'bot': {'2':{'id':'2','code':'network_88c8eccd63f6ff5a59ba04e5b0f2012a','type':'network','openline':false}},
+                'textareaIcon': [{'id':'1','botId':'0','botCode':'','domainHash':'b1b53662eb2eaa6cdb0c8825920d6fab','userHash':'778cc55847d10400f79a05af65a005a9','code':'quick','url':'/upload/imopenlines/141/141d37959c41eb59fbe4cfd1716d1d83.png','iframe':'/desktop_app/iframe/imopenlines_quick.php?','iframeWidth':'512','iframeHeight':'234','iframePopup':false,'js':'','context':'lines','hidden':false,'title':'Canned responses','description':'Open canned responses database','copyright':''}],
+                'command': [{'id':'def0','bot_id':'0','command':'/me','category':'Instant Messenger','common':true,'context':'','title':'Applies italic style','params':'text','extranet':true},{'id':'def1','bot_id':'0','command':'/loud','category':'Instant Messenger','common':true,'context':'','title':'Applies bold style','params':'text','extranet':true},{'id':'def2','bot_id':'0','command':'/>>','category':'Instant Messenger','common':true,'context':'','title':'Renders text as quote','params':'text','extranet':true},{'id':'def3','bot_id':'0','command':'/rename','category':'Chats','common':true,'context':'chat','title':'Edit chat title','params':'new title','extranet':true},{'id':'def4','bot_id':'0','command':'/webrtcDebug','category':'Debug','common':true,'context':'call','title':'Enable video call debug mode','params':'','extranet':true}],
+
+                'smile': {'1':{'SET_ID':'3','NAME':'Smile','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_smile.png','TYPING':':)','WIDTH':'20','HEIGHT':'20'},'3':{'SET_ID':'3','NAME':'Wink','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_wink.png','TYPING':';)','WIDTH':'20','HEIGHT':'20'},'5':{'SET_ID':'3','NAME':'Big grin','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_biggrin.png','TYPING':':D','WIDTH':'20','HEIGHT':'20'},'7':{'SET_ID':'3','NAME':'Cool','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_cool.png','TYPING':'8)','WIDTH':'20','HEIGHT':'20'},'9':{'SET_ID':'3','NAME':'Facepalm','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_facepalm.png','TYPING':':facepalm:','WIDTH':'20','HEIGHT':'20'},'11':{'SET_ID':'3','NAME':'Kiss','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_kiss.png','TYPING':':{}','WIDTH':'20','HEIGHT':'20'},'13':{'SET_ID':'3','NAME':'Sad','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_sad.png','TYPING':':(','WIDTH':'20','HEIGHT':'20'},'15':{'SET_ID':'3','NAME':'Skeptic','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_neutral.png','TYPING':':|','WIDTH':'20','HEIGHT':'20'},'17':{'SET_ID':'3','NAME':'Embarrassed','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_redface.png','TYPING':':oops:','WIDTH':'20','HEIGHT':'20'},'19':{'SET_ID':'3','NAME':'Crying','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_cry.png','TYPING':':cry:','WIDTH':'20','HEIGHT':'20'},'21':{'SET_ID':'3','NAME':'Angry','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_evil.png','TYPING':':evil:','WIDTH':'20','HEIGHT':'20'},'23':{'SET_ID':'3','NAME':'Surprised','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_eek.png','TYPING':':o','WIDTH':'20','HEIGHT':'20'},'25':{'SET_ID':'3','NAME':'Confused','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_confuse.png','TYPING':':/','WIDTH':'20','HEIGHT':'20'},'27':{'SET_ID':'3','NAME':'Idea','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_idea.png','TYPING':':idea:','WIDTH':'20','HEIGHT':'20'},'29':{'SET_ID':'3','NAME':'Question','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_question.png','TYPING':':?:','WIDTH':'20','HEIGHT':'20'},'31':{'SET_ID':'3','NAME':'Exclamation','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_exclaim.png','TYPING':':!:','WIDTH':'20','HEIGHT':'20'},'33':{'SET_ID':'3','NAME':'Like','IMAGE':'/bitrix/images/main/smiles/3/bx_smile_like.png','TYPING':':like:','WIDTH':'20','HEIGHT':'20'}},
+                'smileSet': [{'ID':'3','NAME':'Default set','TYPE':'G','PARENT_ID':'1'}],
+                'settings': {'status':'online','backgroundImage':'','bxdNotify':true,'sshNotify':true,'generalNotify':true,'trackStatus':'','nativeNotify':true,'openDesktopFromPanel':true,'viewOffline':true,'viewGroup':true,'viewLastMessage':true,'enableSound':true,'enableBigSmile':true,'enableRichLink':true,'linesTabEnable':true,'linesNewGroupEnable':false,'sendByEnter':true,'correctText':false,'panelPositionHorizontal':'right','panelPositionVertical':'bottom','loadLastMessage':true,'loadLastNotify':true,'notifyAutoRead':true,'notifyScheme':'simple','notifySchemeLevel':'important','notifySchemeSendSite':true,'notifySchemeSendEmail':false,'notifySchemeSendXmpp':true,'notifySchemeSendPush':true,'privacyMessage':'all','privacyChat':'all','privacyCall':'all','privacySearch':'all','privacyProfile':'all'},
+                'settingsNotifyBlocked': {},
+
+                'notify': {},
+                'unreadNotify' : {},
+                'flashNotify' : {},
+                'countNotify' : 0,
+                'loadNotify' : false,
+
+                'recent': [{'id':'1','chatId':'1','senderId':'0','date':'2018-07-20T15:28:40+03:00','text':'A General chat is open to all of your colleagues. Use this chat to discuss topics that are of importance to anybody in your company.','pinned':false,'userId':'chat1','recipientId':'chat1'},{'id':'6','chatId':'2','senderId':'2','date':'2018-08-01T04:38:00+03:00','text':'Thank you for choosing Bitrix24! Make sure you visit our Helpdesk section to learn how everything works inside Bitrix24.','pinned':false,'userId':'2','recipientId':'2'}],
+                'users': {'2':{'id':'2','name':'Bitrix24 Onboarding Assistant','active':true,'first_name':'Bitrix24 Onboarding Assistant','last_name':'','work_position':'Ask me if you have questions about Bitrix24','color':'#aac337','avatar':'https://dcnt5qvi2hv76.cloudfront.net/b7624603/resize_cache/48/45a41af90f4a8f8ae94152f60a6ec694/main/b4e/b4e94b3d1258fb4e028c7b5855ad191b/avatars-02+_1_.png?h=b24-w2apzp.bitrix24.com','birthday':false,'gender':'M','extranet':false,'network':true,'bot':true,'tz_offset':'0','phone_device':false,'profile':'/company/personal/user/2/','external_auth_id':'bot','status':'online','idle':false,'last_activity_date':false,'mobile_last_date':false,'absent':false},'1':{'id':'1','name':'Quốc Nhật','active':true,'first_name':'Quốc','last_name':'Nhật','work_position':'','color':'#df532d','avatar':'https://dcnt5qvi2hv76.cloudfront.net/b7624603/resize_cache/20/7acf4cadf975128573a8b1c2766af5d8/main/fee/fee14680313361427d934abff0c1d411/84fc1d5b62bfc8539b085424f589b531.jpg?h=b24-w2apzp.bitrix24.com','avatar_id':'20','birthday':false,'gender':'M','phone_device':false,'phones':false,'extranet':false,'tz_offset':'14400','network':false,'bot':false,'connector':false,'profile':'/company/personal/user/1/','external_auth_id':'socservices','status':'online','idle':false,'last_activity_date':'2018-08-01T20:43:17+03:00','mobile_last_date':false,'departments':[],'absent':false}},
+                'businessUsers': ['1'],
+                'groups': {},
+                'userInGroup': {},
+                'chat': {'1':{'id':'1','name':'General chat','color':'#29619b','avatar':'/bitrix/js/im/images/blank.gif','extranet':false,'owner':'0','type':'open','entity_type':'GENERAL','entity_id':'','entity_data_1':'','entity_data_2':'','entity_data_3':'','mute_list':[],'message_type':'O','call_number':'','fake':true}},
+                'userInChat': {},
+                'userChatBlockStatus': {},
+                'userChatOptions': {'GENERAL':{'AVATAR':false,'RENAME':false,'EXTEND':false,'LEAVE':false},'SONET_GROUP':{'AVATAR':false,'RENAME':false,'EXTEND':false,'LEAVE':false,'PATH':'/workgroups/group/#ID#/','PATH_TITLE':'View group'},'TASKS':{'AVATAR':false,'RENAME':false,'EXTEND':false,'LEAVE':false,'PATH':'/company/personal/user/#USER_ID#/tasks/task/view/#TASK_ID#/','PATH_TITLE':'View task'}},
+                'message' : {},
+                'files' : {},
+                'showMessage' : {},
+                'unreadMessage' : {},
+                'flashMessage' : {},
+                'history' : {},
+                'openMessenger' : false,
+                'openHistory' : false,
+                'openNotify' : false,
+                'openSettings' : false,
+                'externalRecentList' : 'bx-im-external-recent-list',
+
+                'generalChatId': 1,
+                'canSendMessageGeneralChat': true,
+                'userId': 1,
+                'userEmail': 'vuihoctoan1379@gmail.com',
+                'userColor': 'RED',
+                'userGender': 'M',
+                'userExtranet': false,
+                'webrtc': {
+                    'turnServer' : 'turn.calls.bitrix24.com', 
+                    'turnServerFirefox' : '54.217.240.163', 
+                    'turnServerLogin' : 'bitrix', 
+                    'turnServerPassword' : 'bitrix', 
+                    'mobileSupport': false, 
+                    'phoneEnabled': true, 
+                    'phoneSipAvailable': false, 
+                    'phoneDeviceActive': 'N', 
+                    'phoneCanPerformCalls': 'Y', 
+                    'phoneCanCallUserNumber': 'Y', 
+                    'phoneCanInterceptCall': false, 
+                    'callServerEnabled': 'N', 
+                    'phoneCallCardRestApps': [],
+                    'phoneLines': {'LINK_BASE_NUMBER':{'LINE_NUMBER':'LINK_BASE_NUMBER','SHORT_NAME':'Main outgoing number','FULL_NAME':'Main outgoing number','TYPE':'LINK'}},
+                    'phoneDefaultLineId': 'LINK_BASE_NUMBER',
+                    'availableLines': []
+                },
+                'openlines': {'canDeleteMessage':['facebookcomments','instagram'],'canDeleteOwnMessage':['facebookcomments','instagram','botframework_slack','livechat','network'],'canUpdateOwnMessage':['facebookcomments','telegrambot','botframework_skype','botframework_slack','botframework_telegram','livechat','network'],'queue':[]},
+                'options': {'contactListLoad' : true, 'chatExtendShowHistory' : true, 'frameMode': false, 'frameType': 'NONE', 'showRecent': true, 'showMenu': true},
+                'disk': {'enable' : true, 'external' : true},
+                'path' : {'lf' : '/stream/', 'profile' : '/company/personal/user/1/', 'profileTemplate' : '/company/personal/user/#user_id#/', 'mail' : '/company/personal/mail/', 'im': '', 'call': '', 'file': '', 'crm' : {'LEAD':'/crm/lead/details/#ID#/','CONTACT':'/crm/contact/details/#ID#/','COMPANY':'/crm/company/details/#ID#/','DEAL':'/crm/deal/details/#ID#/'}}
+            });
+        });
+    </script>
+<div id="bxdynamic_im_end" style="display:none"></div>
+                    
+                </ul></div></td>
+
+
+
+</div>
+    <div class="col cotduoicung" id="cotduoicung" style="width:100%;"><table class="bx-layout-inner-inner-table profile-menu-mode">
+                        <colgroup>
+                            <col class="bx-layout-inner-inner-cont">
+                        </colgroup>
+                                                    <tbody><tr class="bx-layout-inner-inner-top-row">
+                            <td class="bx-layout-inner-inner-cont">
+                                <div class="page-header">
+                                    
+<div class="profile-menu">
+<div class="profile-menu-inner">
+            <a href="/company/personal/user/1/" class="profile-menu-avatar user-default-avatar" style="background:url(assets/img//profile.jpg) no-repeat center center; background-size: cover;"><i></i>
+    </a>
+    <div class="profile-menu-right">
+        <div class="profile-menu-info">
+            <a href="/company/personal/user/1/" class="profile-menu-name">Lê Vọng</a>           </div>
+
+        <div id="profile-menu-filter" class="profile-menu-items"><a href="/company/personal/user/1/" class="profile-menu-item profile-menu-item-active">General</a><a href="/company/personal/user/1/disk/path/" class="profile-menu-item 
+                                                    " style="color:#545c6a;">Drive                     </a>          </div>
+    </div>
+</div>
+</div>
+
+<script type="text/javascript">
+function openProfileMenuPopup(bindElement)
+{
+BX.addClass(bindElement, "profile-menu-user-active");
+
+var menu = [];
+
+            menu.push(
+            {
+                text : "Edit Profile",
+                title: "Edit Profile",
+                href: "/company/personal/user/1/edit/"
+            }
+        );
+                menu.push(
+        {
+            text : "Invites and requests",
+            title: "Invites and requests",
+            href: "/company/personal/user/1/requests/"
+        }
+    );
+            menu.push(
+        {
+            text : "Call log",
+            title: "Call log",
+            href: "/telephony/detail.php?USER_ID=1"
+        }
+    );
+    if (menu.length > 0)
+{
+    BX.PopupMenu.show("user-menu-profile", bindElement, menu, {
+        offsetTop: 5,
+        offsetLeft : 12,
+        angle : true,
+        events : {
+            onPopupClose : function() {
+                BX.removeClass(this.bindElement, "profile-menu-user-active");
+            }
+        }
+    });
+}
+}
+</script>
+
+                                    <div class="pagetitle-wrap ">
+                                        <div class="pagetitle-inner-container">
+                                            <div class="pagetitle-menu pagetitle-container pagetitle-last-item-in-a-row" id="pagetitle-menu">
+            <script>
+                BX.message["disk_restriction"] = false;
+                BX.message["disk_revision_api"] = 6;
+                BX.message["disk_document_service"] = "";
+                BX.message["wd_desktop_disk_is_installed"] = false;
+            </script>    
+        </div>
+                                            <div class="pagetitle">
+                                                <span id="pagetitle" class="pagetitle-item">Subject Test</span>
+                                                <span class="pagetitle-star" id="pagetitle-star" title="Add current page to left menu"></span>
+                                            </div>
+                                                                                        </div>
+                                    </div>
+                                    <div class="pagetitle-below">
+<script>
+if (!BX.Bitrix24.LeftMenuClass.initPagetitleStar())
+{
+BX.ready(function() {
+    BX.Bitrix24.LeftMenuClass.initPagetitleStar()
+});
+}
+
+</script></div>
+                                </div>
+                            </td>
+                        </tr>
+                                                    <tr>
+                            <td class="bx-layout-inner-inner-cont">
+
+                                <div id="workarea">
+                                    
+                                    
+                                    <div id="sidebar"></div>
+                                    
+                                                                            <div id="workarea-content">
+                                                                                
+                                                                                
+                                                                                
+                                        <div class="workarea-content-paddings">
+
+
+    <div id="example_wrapper" class="dataTables_wrapper"><div class="dataTables_length" id="example_length"><label>Show <select name="example_length" aria-controls="example" class=""><option value="10">5</option><option value="25">10</option><option value="50">50</option><option value="100">20</option></select> entries</label></div><div id="example_filter" class="dataTables_filter"><label>Search:<input type="search" class="" placeholder="" aria-controls="example"></label></div><table id="example" class="display dataTable" cellspacing="0" width="100%" role="grid" aria-describedby="example_info" style="width: 100%;">
+                <thead>
+                    <tr role="row"><th class="sorting_asc" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Name: activate to sort column descending" aria-sort="ascending" style="width: 50px;">ID</th><th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Position: activate to sort column ascending" style="width: 250px;">English name</th><th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Office: activate to sort column ascending" style="width: 250px;">Vietnamese name</th><th class="center sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Edit / Delete: activate to sort column ascending" style="width: 100px;">Edit / Delete</th></tr>
+                </thead>
+                <tfoot>
+                    <tr><th rowspan="1" colspan="1">ID</th><th rowspan="1" colspan="1">English name</th><th rowspan="1" colspan="1">Vietnamese name</th><th class="center" rowspan="1" colspan="1">Edit / Delete</th></tr>
+                </tfoot>
+            <tbody><tr id="row_5 dong1" role="row" class="odd"><td class="sorting_1" id = "so1" value = "1">1</td><td id ="Englishname1">Colledge</td><td id ="Vietnamesename1"> Cao đẳng</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
+Edit
+</button>   <button type="button" class="btn btn-danger" onclick = "Xoadong1()" >Delete</button></td></tr><tr id="row_5 dong2" role="row" class="odd"><td class="sorting_1" id = "so2" value = "2">2</td><td id ="Englishname2">University</td><td id ="Vietnamesename2">Đại học</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal2">Edit</button>   <button type="button" class="btn btn-danger" onclick = "Xoadong2()">Delete</button></td></tr>
+                
+<tr id="row_5 dong3" role="row" class="odd"><td class="sorting_1" id = "so3" value = "3">3</td><td id ="Englishname3">Master</td><td id ="Vietnamesename3"> Thạc sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal3">Edit</button>  <button type="button" class="btn btn-danger" onclick = "Xoadong3()">Delete</button></td></tr>
+                
+                
+<tr id="row_5 dong4" role="row" class="odd" >          
+<td class="sorting_1" id = "so4"  >4</td><td  id ="Englishname4">Duputy Doctorate</td><td id ="Vietnamesename4" > Phó Tiến sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal4">Edit</button>  <button type="button" class="btn btn-danger" onclick = "Xoadong4()" >Delete</button></td></tr>
+                
+                
+                
+<tr id="row_5 dong5" role="row" class="odd" >          
+<td class="sorting_1" id = "so5"  >5</td><td  id ="Englishname5">Doctor</td><td id ="Vietnamesename5" > Tiến sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal5">Edit</button> <button type="button" class="btn btn-danger" onclick = "Xoadong5()" >Delete</button></td></tr>
+        
+<tr id="row_5 dong6" role="row" class="odd" style ="display:none;">          
+<td class="sorting_1" id = "so6"  >5</td><td  id ="Englishname6">Doctor</td><td id ="Vietnamesename6" > Tiến sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal6">Edit</button>  <button type="button" class="btn btn-danger" onclick = "Xoadong6()" >Delete</button></td></tr>
+                
+<tr id="row_5 dong7" role="row" class="odd" style ="display:none;">          
+<td class="sorting_1" id = "so7"  >5</td><td id ="Englishname7">Doctor</td><td id ="Vietnamesename7"> Tiến sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal7">Edit</button> <button type="button" class="btn btn-danger" onclick = "Xoadong7()" >Delete</button></td></tr>
+                
+<tr id="row_5 dong8" role="row" class="odd" style ="display:none;">          
+<td class="sorting_1" id = "so8"  >5</td><td  id ="Englishname8">Doctor</td><td id ="Vietnamesename8"> Tiến sĩ</td><td class=" center"><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal8">Edit</button>  <button type="button" class="btn btn-danger" onclick = "Xoadong8()" >Delete</button></td></tr>
+        
+        </tbody></table><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModaltao">Add Degree</button><div class="dataTables_paginate paging_simple_numbers" id="example_paginate"><a class="paginate_button previous disabled" aria-controls="example" data-dt-idx="0" tabindex="0" id="example_previous">Previous</a><span><a class="paginate_button current" aria-controls="example" data-dt-idx="1" tabindex="0">1</a></span><a class="paginate_button next" aria-controls="example" data-dt-idx="7" tabindex="0" id="example_next">Next</a></div></div>
+
+
+                                            
+
+
+
+                                                                                                                                
+
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                                                        
+                                                        
+                                                        
+                                                        
+<div class="modal fade" id="myModal">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              </a> <input #Engname1 id="Tentienganh1">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet1">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri1()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+                                                        
+                                                        
+<div class="modal fade" id="myModal2">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;             </a> <input #Engname1 id="Tentienganh2">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet2">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri2()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+                                                        
+                                                        
+<div class="modal fade" id="myModal3">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;                </a> <input #Engname1 id="Tentienganh3">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name </a> <input #Vietname1 id="Tentiengviet3">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri3()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+                                                        
+<div class="modal fade" id="myModal4">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              </a> <input #Engname1 id="Tentienganh4">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet4">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri4()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+
+                                                        
+<div class="modal fade" id="myModal5">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              </a> <input #Engname1 id="Tentienganh5">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet5">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri5()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+                                                        
+                                                        
+                                                        
+<div class="modal fade" id="myModal6">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;             </a> <input #Engname1 id="Tentienganh6">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet6">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri6()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+
+                                                        
+<div class="modal fade" id="myModal7">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              </a> <input #Engname1 id="Tentienganh7">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviet3">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri7()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+                                                        
+                                                        
+<div class="modal fade" id="myModal3">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  </a> <input #Engname1 id="Tentienganh3">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name </a> <input #Vietname1 id="Tentiengviet3">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal" onclick = "Doigiatri3()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+               
+                                                        
+                                                        
+<div class="modal fade" id="myModaltao">
+<div class="modal-dialog">
+  <div class="modal-content">
+  
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h4 class="modal-title">Edit Degree</h4>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+    </div>
+    
+    <!-- Modal body -->
+    <div class="modal-body">
+      <a class="content-edit-form-field-name">English name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;               </a> <input #Engname1 id="Tentienganhtao">
+  <br>
+  <a class="content-edit-form-field-name">Vietnamese name</a> <input #Vietname1 id="Tentiengviettao">
+    </div>
+    
+    <!-- Modal footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" data-dismiss="modal"  onclick = "Themdong()">Save</button>
+    </div>
+    
+  </div>
+</div>
+</div>
+
+
+
+                    </tbody></table></div>
+</div>

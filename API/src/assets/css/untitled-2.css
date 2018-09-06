@@ -1,0 +1,9 @@
+#header {
+  /*background:#535c69;*/
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  height:63px;
+  /*min-width:1365px;*/
+  position:relative;
+  z-index:300;
+}
+

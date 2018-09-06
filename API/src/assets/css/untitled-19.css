@@ -1,0 +1,11 @@
+.header-logo-block-settings {
+  margin:0 0 0 auto;
+  width:30px;
+  height:62px;
+  line-height:62px;
+  text-align:center;
+  -webkit-transition:opacity .3s;
+  transition:opacity .3s;
+  cursor:pointer;
+}
+

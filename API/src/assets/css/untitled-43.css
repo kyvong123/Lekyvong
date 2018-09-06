@@ -1,0 +1,20 @@
+.bx-time {
+  /*padding-right:240px;*/
+  display:inline-block;
+  font-size:38px;
+  font-family:"OpenSans-Light",sans-serif;
+  height:63px;
+  line-height:59px;
+  position:relative;
+  vertical-align:middle;
+  z-index:5;
+  /*display:inline-block;*/
+  /*font-size:38px;*/
+  /*font-family:"OpenSans-Light",sans-serif;*/
+  /*height:63px;*/
+  /*line-height:59px;*/
+  /*position:relative;*/
+  /*vertical-align:middle;*/
+  /*z-index:5;*/
+}
+

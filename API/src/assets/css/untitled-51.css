@@ -1,0 +1,11 @@
+.timeman-right-side {
+  display:inline-block;
+  font-size:12px;
+  font-family:"OpenSans-Regular",sans-serif;
+  padding:0 0 0 13px;
+  position:relative;
+  text-transform:uppercase;
+  vertical-align:middle;
+  z-index:5;
+}
+
